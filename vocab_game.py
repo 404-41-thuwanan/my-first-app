@@ -5,7 +5,7 @@ import time
 st.title("🎮 เกมเติมคำศัพท์ภาษาอังกฤษ (Vocabulary Game)")
 
 # ---------------------------------------------------------
-# 1. กำหนดค่าเริ่มต้นใน session_state (รวมตัวจับเวลา 30 วินาที)
+# 1. กำหนดค่าเริ่มต้นใน session_state
 # ---------------------------------------------------------
 if "start_time" not in st.session_state:
     st.session_state.start_time = time.time()
@@ -14,6 +14,23 @@ if "ans1_val" not in st.session_state:
     st.session_state.ans1_val = ""
 if "ans2_val" not in st.session_state:
     st.session_state.ans2_val = ""
+
+# ---------------------------------------------------------
+# จุดที่ 8: ฟังก์ชันสร้างหน้าต่าง Dialog สรุปผลลัพธ์ (Popup)
+# ---------------------------------------------------------
+@st.dialog("📊 สรุปผลการเล่นเกม")
+def show_result_dialog(score, total, u_ans1, u_ans2):
+    st.write(f"### ได้รับคะแนน: {score} / {total} คะแนน")
+    st.write("---")
+    st.write(f"• **ข้อที่ 1 (apple):** คำตอบของคุณคือ `{u_ans1 if u_ans1 else '-'}`")
+    st.write(f"• **ข้อที่ 2 (fish):** คำตอบของคุณคือ `{u_ans2 if u_ans2 else '-'}`")
+    st.write("---")
+    
+    if score == total:
+        st.balloons()  # แสดงเอฟเฟกต์ลูกโป่งเมื่อได้คะแนนเต็ม
+        st.success("🎉 เก่งมาก! คุณตอบถูกต้องทั้งหมด!")
+    else:
+        st.warning("พยายามใหม่อีกครั้งนะ!")
 
 # คำนวณเวลาที่เหลือ (30 วินาที)
 elapsed_time = time.time() - st.session_state.start_time
@@ -31,7 +48,7 @@ CORRECT_ANS1 = "apple"
 CORRECT_ANS2 = "fish"
 
 # ---------------------------------------------------------
-# 2. ช่องรับคำตอบ (ล็อคช่องกรอกเมื่อหมดเวลา)
+# 2. ช่องรับคำตอบ
 # ---------------------------------------------------------
 st.subheader("📝 จงเติมคำศัพท์ภาษาอังกฤษให้ถูกต้อง")
 
@@ -45,7 +62,7 @@ st.session_state.ans2_val = ans2
 col1, col2 = st.columns(2)
 
 with col1:
-    # ปุ่มส่งคำตอบ (กดไม่ได้ถ้าหมดเวลา)
+    # ปุ่มส่งคำตอบ
     if st.button("ส่งคำตอบ", disabled=is_time_up):
         u_ans1 = ans1.strip().lower()
         u_ans2 = ans2.strip().lower()
@@ -57,16 +74,11 @@ with col1:
         if u_ans2 == CORRECT_ANS2:
             score += 1
 
-        # แสดงผลคะแนน
-        st.subheader(f"📊 สรุปผลคะแนน: {score} / 2 คะแนน")
-        
-        if score == 2:
-            st.success("🎉 เก่งมาก! คุณตอบถูกต้องทั้งหมด 2 ข้อ")
-        else:
-            st.warning(f"คุณตอบถูก {score} ข้อ พยายามใหม่อีกครั้งนะ!")
+        # เรียกเปิดหน้าต่าง Dialog แสดงผลลัพธ์
+        show_result_dialog(score, 2, u_ans1, u_ans2)
 
 with col2:
-    # ปุ่มเริ่มเกมใหม่ (รีเซ็ตทั้งคำตอบและตัวจับเวลา 30 วินาที)
+    # ปุ่มเริ่มเกมใหม่
     if st.button("เริ่มเกมใหม่"):
         st.session_state.ans1_val = ""
         st.session_state.ans2_val = ""
