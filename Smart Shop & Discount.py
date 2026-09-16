@@ -3,25 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Shop & Discount - แอปคิดเงินและคำนวณประจำร้าน</title>
-    <!-- Tailwind CSS -->
+    <title>Smart Shop & Discount - แอปคิดเงินประจำร้าน</title>
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts -->
+    <!-- Google Fonts (Kanit) -->
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Kanit', sans-serif; }
         @media print {
-            .no-print { display: none !important; }
-            .print-only { display: block !important; }
+            body * { visibility: hidden; }
+            #receipt-print, #receipt-print * { visibility: visible; }
+            #receipt-print { position: absolute; left: 0; top: 0; width: 100%; display: block !important; }
         }
     </style>
 </head>
 <body class="bg-slate-100 min-h-screen text-slate-800">
 
     <!-- Navbar -->
-    <nav class="bg-indigo-600 text-white shadow-md no-print">
+    <nav class="bg-indigo-600 text-white shadow-md">
         <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
             <div class="flex items-center space-x-3">
                 <i class="fa-solid fa-store text-2xl"></i>
@@ -33,19 +34,19 @@
         </div>
     </nav>
 
-    <!-- Main Container -->
-    <div class="max-w-7xl mx-auto p-4 grid grid-cols-1 lg:grid-cols-12 gap-6 no-print">
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto p-4 grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        <!-- Left Column: Products & Custom Input (7 Cols) -->
+        <!-- Left Column: Catalog & Custom Add (7 Cols) -->
         <div class="lg:col-span-7 space-y-6">
             
-            <!-- Custom Add Product -->
+            <!-- Custom Product Input -->
             <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
                 <h2 class="text-lg font-semibold mb-4 text-indigo-900"><i class="fa-solid fa-cart-plus mr-2"></i>เพิ่มรายการสินค้าด่วน</h2>
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <input type="text" id="custom-name" placeholder="ชื่อสินค้า (เช่น กาแฟเย็น)" class="p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
                     <input type="number" id="custom-price" placeholder="ราคา (บาท)" class="p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
-                    <button onclick="addCustomProduct()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 px-4 rounded-lg transition duration-200">
+                    <button onclick="addCustomProduct()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 px-4 rounded-lg transition">
                         <i class="fa-solid fa-plus mr-1"></i> เพิ่มลงตะกร้า
                     </button>
                 </div>
@@ -54,12 +55,10 @@
             <!-- Quick Catalog -->
             <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
                 <h2 class="text-lg font-semibold mb-4 text-indigo-900"><i class="fa-solid fa-boxes-stacked mr-2"></i>เมนูลัดประจำร้าน</h2>
-                <div class="grid grid-cols-2 sm:grid-cols-3 gap-3" id="quick-catalog">
-                    <!-- Dynamic Buttons -->
-                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-3" id="quick-catalog"></div>
             </div>
 
-            <!-- Sales History / Summary -->
+            <!-- Sales Summary -->
             <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-lg font-semibold text-indigo-900"><i class="fa-solid fa-chart-line mr-2"></i>สรุปยอดขายวันนี้</h2>
@@ -79,7 +78,7 @@
 
         </div>
 
-        <!-- Right Column: Cart, Discount & Checkout (5 Cols) -->
+        <!-- Right Column: Cart & Payment (5 Cols) -->
         <div class="lg:col-span-5 space-y-6">
             <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 sticky top-4">
                 <div class="flex justify-between items-center mb-4 border-b pb-3">
@@ -87,20 +86,19 @@
                     <button onclick="clearCart()" class="text-xs text-red-500 hover:text-red-700">ล้างตะกร้า</button>
                 </div>
 
-                <!-- Cart Items List -->
+                <!-- Items List -->
                 <div id="cart-items" class="max-h-56 overflow-y-auto divide-y mb-4">
                     <p class="text-slate-400 text-center py-8 text-sm">ยังไม่มีสินค้าในตะกร้า</p>
                 </div>
 
-                <!-- Calculation Section -->
+                <!-- Calculations -->
                 <div class="space-y-3 border-t pt-4 text-sm">
-                    <!-- Subtotal -->
                     <div class="flex justify-between text-slate-600">
                         <span>ราคารวม (Subtotal)</span>
                         <span id="subtotal">฿0.00</span>
                     </div>
 
-                    <!-- Discount Section -->
+                    <!-- Discount -->
                     <div class="bg-amber-50 p-3 rounded-lg space-y-2">
                         <div class="font-medium text-amber-900 text-xs">คำนวณส่วนลด (Discount)</div>
                         <div class="flex gap-2">
@@ -112,7 +110,7 @@
                         </div>
                     </div>
 
-                    <!-- VAT Toggle -->
+                    <!-- VAT -->
                     <div class="flex justify-between items-center text-slate-600">
                         <label class="flex items-center gap-2 cursor-pointer">
                             <input type="checkbox" id="vat-toggle" onchange="calculateTotal()" class="rounded text-indigo-600">
@@ -121,18 +119,16 @@
                         <span id="vat-amount">฿0.00</span>
                     </div>
 
-                    <!-- Grand Total -->
+                    <!-- Net Total -->
                     <div class="flex justify-between items-center text-lg font-bold text-slate-900 border-t pt-2">
                         <span>ยอดชำระสุทธิ</span>
                         <span id="grand-total" class="text-2xl text-indigo-600">฿0.00</span>
                     </div>
 
-                    <!-- Payment Section -->
+                    <!-- Cash & Change -->
                     <div class="pt-3 border-t space-y-2">
                         <label class="block text-xs font-medium text-slate-600">รับเงินมา (บาท)</label>
-                        <div class="flex gap-2">
-                            <input type="number" id="cash-received" oninput="calculateChange()" placeholder="0.00" class="p-2.5 border rounded-lg w-full text-lg font-semibold focus:ring-2 focus:ring-indigo-500 outline-none">
-                        </div>
+                        <input type="number" id="cash-received" oninput="calculateChange()" placeholder="0.00" class="p-2.5 border rounded-lg w-full text-lg font-semibold focus:ring-2 focus:ring-indigo-500 outline-none">
                         <div class="grid grid-cols-4 gap-1 text-xs">
                             <button onclick="quickCash('exact')" class="bg-slate-200 hover:bg-slate-300 py-1 rounded">พอดี</button>
                             <button onclick="quickCash(100)" class="bg-slate-200 hover:bg-slate-300 py-1 rounded">100</button>
@@ -141,14 +137,12 @@
                         </div>
                     </div>
 
-                    <!-- Change Result -->
                     <div class="flex justify-between items-center p-3 bg-emerald-50 rounded-lg text-emerald-900 font-bold">
                         <span>เงินทอน</span>
                         <span id="change-amount" class="text-xl">฿0.00</span>
                     </div>
 
-                    <!-- Submit Button -->
-                    <button onclick="checkout()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-lg shadow-md transition duration-200 text-center">
+                    <button onclick="checkout()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-lg shadow-md transition text-center">
                         <i class="fa-solid fa-check-circle mr-2"></i> จบการขาย / พิมพ์ใบเสร็จ
                     </button>
                 </div>
@@ -156,9 +150,9 @@
         </div>
     </div>
 
-    <!-- Printable Receipt Area (Hidden on Web View) -->
-    <div id="receipt-print" class="hidden print-only p-6 max-w-xs mx-auto bg-white text-black text-xs font-mono">
-        <div class="text-center mb-4">
+    <!-- Hidden Receipt for Printing -->
+    <div id="receipt-print" class="hidden p-4 max-w-xs mx-auto text-black text-xs font-mono">
+        <div class="text-center mb-3">
             <h2 class="text-base font-bold">Smart Shop</h2>
             <p>ใบเสร็จรับเงินอย่างย่อ</p>
             <p id="receipt-date"></p>
@@ -175,11 +169,10 @@
             <div class="flex justify-between"><span>เงินทอน:</span><span id="r-change"></span></div>
         </div>
         <div class="border-b border-dashed my-3"></div>
-        <div class="text-center text-slate-500">ขอบคุณที่อุดหนุนครับ!</div>
+        <div class="text-center">ขอบคุณที่อุดหนุนครับ!</div>
     </div>
 
     <script>
-        // Preset Products
         const presetProducts = [
             { id: 1, name: 'กาแฟอเมริกาโน่', price: 50, icon: 'fa-coffee' },
             { id: 2, name: 'ชาไทยเย็น', price: 45, icon: 'fa-glass-water' },
@@ -191,17 +184,14 @@
         let cart = [];
         let salesHistory = JSON.parse(localStorage.getItem('salesHistory')) || [];
 
-        // Initialize App
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('current-date').innerText = new Date().toLocaleDateString('th-TH');
             renderCatalog();
             updateHistorySummary();
         });
 
-        // Render Quick Catalog
         function renderCatalog() {
-            const container = document.getElementById('quick-catalog');
-            container.innerHTML = presetProducts.map(p => `
+            document.getElementById('quick-catalog').innerHTML = presetProducts.map(p => `
                 <button onclick="addToCart('${p.name}', ${p.price})" class="p-3 border rounded-xl bg-slate-50 hover:bg-indigo-50 hover:border-indigo-300 transition text-left flex flex-col justify-between h-20">
                     <div class="font-medium text-xs text-slate-700 truncate"><i class="fa-solid ${p.icon} text-indigo-500 mr-1"></i>${p.name}</div>
                     <div class="text-sm font-bold text-indigo-600">฿${p.price.toFixed(2)}</div>
@@ -209,34 +199,22 @@
             `).join('');
         }
 
-        // Add Product to Cart
         function addToCart(name, price) {
-            const existing = cart.find(item => item.name === name);
-            if (existing) {
-                existing.qty += 1;
-            } else {
-                cart.push({ name, price: Number(price), qty: 1 });
-            }
+            const item = cart.find(i => i.name === name);
+            if (item) { item.qty += 1; } 
+            else { cart.push({ name, price: Number(price), qty: 1 }); }
             renderCart();
         }
 
         function addCustomProduct() {
-            const nameInput = document.getElementById('custom-name');
-            const priceInput = document.getElementById('custom-price');
-            const name = nameInput.value.trim();
-            const price = parseFloat(priceInput.value);
-
-            if (!name || isNaN(price) || price <= 0) {
-                alert('กรุณากรอกชื่อและราคาให้ถูกต้อง');
-                return;
-            }
-
+            const name = document.getElementById('custom-name').value.trim();
+            const price = parseFloat(document.getElementById('custom-price').value);
+            if (!name || isNaN(price) || price <= 0) return alert('กรุณากรอกข้อมูลให้ถูกต้อง');
             addToCart(name, price);
-            nameInput.value = '';
-            priceInput.value = '';
+            document.getElementById('custom-name').value = '';
+            document.getElementById('custom-price').value = '';
         }
 
-        // Render Cart
         function renderCart() {
             const container = document.getElementById('cart-items');
             if (cart.length === 0) {
@@ -244,7 +222,6 @@
                 calculateTotal();
                 return;
             }
-
             container.innerHTML = cart.map((item, index) => `
                 <div class="py-2.5 flex justify-between items-center text-sm">
                     <div class="flex-1 pr-2">
@@ -252,22 +229,19 @@
                         <div class="text-xs text-slate-500">฿${item.price.toFixed(2)} x ${item.qty}</div>
                     </div>
                     <div class="flex items-center gap-2">
-                        <button onclick="updateQty(${index}, -1)" class="w-6 h-6 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center font-bold text-slate-600">-</button>
+                        <button onclick="updateQty(${index}, -1)" class="w-6 h-6 rounded-full bg-slate-100 font-bold text-slate-600">-</button>
                         <span class="w-5 text-center font-semibold">${item.qty}</span>
-                        <button onclick="updateQty(${index}, 1)" class="w-6 h-6 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center font-bold text-slate-600">+</button>
+                        <button onclick="updateQty(${index}, 1)" class="w-6 h-6 rounded-full bg-slate-100 font-bold text-slate-600">+</button>
                         <span class="font-bold text-slate-800 w-14 text-right">฿${(item.price * item.qty).toFixed(2)}</span>
                     </div>
                 </div>
             `).join('');
-
             calculateTotal();
         }
 
         function updateQty(index, change) {
             cart[index].qty += change;
-            if (cart[index].qty <= 0) {
-                cart.splice(index, 1);
-            }
+            if (cart[index].qty <= 0) cart.splice(index, 1);
             renderCart();
         }
 
@@ -278,20 +252,14 @@
             renderCart();
         }
 
-        // Calculation Logic
         function calculateTotal() {
-            const subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+            const subtotal = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
             const discountType = document.getElementById('discount-type').value;
             const discountValue = parseFloat(document.getElementById('discount-value').value) || 0;
             const isVat = document.getElementById('vat-toggle').checked;
 
-            let discountAmount = 0;
-            if (discountType === 'percent') {
-                discountAmount = subtotal * (discountValue / 100);
-            } else {
-                discountAmount = discountValue;
-            }
-            discountAmount = Math.min(discountAmount, subtotal); // Prevent negative
+            let discountAmount = discountType === 'percent' ? subtotal * (discountValue / 100) : discountValue;
+            discountAmount = Math.min(discountAmount, subtotal);
 
             const afterDiscount = subtotal - discountAmount;
             const vatAmount = isVat ? afterDiscount * 0.07 : 0;
@@ -308,61 +276,36 @@
         function calculateChange() {
             const { grandTotal } = calculateTotal();
             const cash = parseFloat(document.getElementById('cash-received').value) || 0;
-            const change = cash - grandTotal;
             const changeElem = document.getElementById('change-amount');
 
             if (cart.length === 0 || cash < grandTotal) {
                 changeElem.innerText = '฿0.00';
                 changeElem.className = 'text-xl text-slate-400';
             } else {
-                changeElem.innerText = `฿${change.toFixed(2)}`;
+                changeElem.innerText = `฿${(cash - grandTotal).toFixed(2)}`;
                 changeElem.className = 'text-xl text-emerald-600';
             }
         }
 
         function quickCash(amount) {
             const { grandTotal } = calculateTotal();
-            if (amount === 'exact') {
-                document.getElementById('cash-received').value = grandTotal.toFixed(2);
-            } else {
-                document.getElementById('cash-received').value = amount;
-            }
+            document.getElementById('cash-received').value = amount === 'exact' ? grandTotal.toFixed(2) : amount;
             calculateChange();
         }
 
-        // Checkout & Print Receipt
         function checkout() {
-            if (cart.length === 0) {
-                alert('โปรดเลือกสินค้าอย่างน้อย 1 รายการ');
-                return;
-            }
-
+            if (cart.length === 0) return alert('โปรดเลือกสินค้าอย่างน้อย 1 รายการ');
             const { subtotal, discountAmount, vatAmount, grandTotal } = calculateTotal();
             const cash = parseFloat(document.getElementById('cash-received').value) || 0;
+            if (cash < grandTotal) return alert('ยอดเงินที่รับมาไม่เพียงพอ');
 
-            if (cash < grandTotal) {
-                alert('ยอดเงินที่รับมาไม่เพียงพอ');
-                return;
-            }
-
-            // Save transaction to history
-            const transaction = {
-                id: Date.now(),
-                date: new Date().toLocaleString('th-TH'),
-                total: grandTotal
-            };
+            const transaction = { id: Date.now(), date: new Date().toLocaleString('th-TH'), total: grandTotal };
             salesHistory.push(transaction);
             localStorage.setItem('salesHistory', JSON.stringify(salesHistory));
             updateHistorySummary();
 
-            // Prepare Receipt Print
             document.getElementById('receipt-date').innerText = transaction.date;
-            document.getElementById('receipt-items').innerHTML = cart.map(item => `
-                <div class="flex justify-between">
-                    <span>${item.name} x${item.qty}</span>
-                    <span>${(item.price * item.qty).toFixed(2)}</span>
-                </div>
-            `).join('');
+            document.getElementById('receipt-items').innerHTML = cart.map(i => `<div class="flex justify-between"><span>${i.name} x${i.qty}</span><span>${(i.price * i.qty).toFixed(2)}</span></div>`).join('');
             document.getElementById('r-subtotal').innerText = subtotal.toFixed(2);
             document.getElementById('r-discount').innerText = discountAmount.toFixed(2);
             document.getElementById('r-vat').innerText = vatAmount.toFixed(2);
@@ -370,23 +313,18 @@
             document.getElementById('r-cash').innerText = cash.toFixed(2);
             document.getElementById('r-change').innerText = (cash - grandTotal).toFixed(2);
 
-            // Print
             window.print();
-
-            // Reset after sale
             clearCart();
-            alert('บันทึกการขายสำเร็จ!');
         }
 
-        // History Summary
         function updateHistorySummary() {
             document.getElementById('total-bills').innerText = salesHistory.length;
-            const totalAmount = salesHistory.reduce((sum, item) => sum + item.total, 0);
-            document.getElementById('total-sales-amount').innerText = `฿${totalAmount.toFixed(2)}`;
+            const total = salesHistory.reduce((sum, item) => sum + item.total, 0);
+            document.getElementById('total-sales-amount').innerText = `฿${total.toFixed(2)}`;
         }
 
         function clearHistory() {
-            if (confirm('คุณต้องการล้างประวัติการขายทั้งหมดใช่หรือไม่?')) {
+            if (confirm('ต้องการล้างประวัติการขายทั้งหมดใช่หรือไม่?')) {
                 salesHistory = [];
                 localStorage.removeItem('salesHistory');
                 updateHistorySummary();
