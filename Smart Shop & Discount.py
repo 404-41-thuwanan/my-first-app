@@ -1,183 +1,360 @@
 import streamlit as st
-import datetime
+import streamlit.components.v1 as components
 
-# 1. ตั้งค่าหน้าจอ Streamlit
-st.set_page_config(page_title="PoohBanyen Cafe POS", page_icon="☕", layout="wide")
+st.set_page_config(page_title="Cashier Challenge Game", page_icon="🎮", layout="wide")
 
-# 2. จัดการ State ความจำของระบบ
-if "cart" not in st.session_state:
-    st.session_state.cart = {}
-if "sales_history" not in st.session_state:
-    st.session_state.sales_history = []
-if "use_discount_10" not in st.session_state:
-    st.session_state.use_discount_10 = False
-if "cash_input_val" not in st.session_state:
-    st.session_state.cash_input_val = 0.0
+html_code = """
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เกมฝึกทักษะแคชเชียร์คิดเงิน</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Kanit', sans-serif; user-select: none; }
+        .num-btn { transition: all 0.1s active:scale-95; }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen p-4 flex flex-col justify-center items-center">
 
-# 3. ส่วนหัวของแอปพลิเคชัน
-st.title("☕ PoohBanyen Cafe POS")
-st.caption(f"วันที่: {datetime.date.today().strftime('%d/%m/%Y')}")
+    <!-- Top Score Bar -->
+    <div class="w-full max-w-4xl bg-slate-800 rounded-2xl p-4 mb-4 flex justify-between items-center border border-slate-700 shadow-xl">
+        <div class="flex items-center space-x-3">
+            <div class="text-3xl">🎮</div>
+            <div>
+                <h1 class="font-bold text-lg text-amber-400">PoohBanyen Cashier Game</h1>
+                <p class="text-xs text-slate-400">เกมฝึกคิดเงิน & ทอนเงินแคชเชียร์</p>
+            </div>
+        </div>
+        <div class="flex space-x-6 text-center">
+            <div>
+                <div class="text-xs text-slate-400">คะแนน (Score)</div>
+                <div id="score-val" class="text-2xl font-extrabold text-emerald-400">0</div>
+            </div>
+            <div>
+                <div class="text-xs text-slate-400">ผ่านแล้ว</div>
+                <div id="streak-val" class="text-2xl font-extrabold text-amber-400">0 ด่าน</div>
+            </div>
+        </div>
+    </div>
 
-# แยกหน้าจอเป็น 2 ฝั่ง (ฝั่งซ้ายเลือกสินค้า 7 ส่วน / ฝั่งขวาตะกร้าคิดเงิน 5 ส่วน)
-col_left, col_right = st.columns([7, 5])
-
-# รายการสินค้าแนะนำ
-preset_products = [
-    {"name": "กาแฟอเมริกาโน่", "price": 50.0, "icon": "☕"},
-    {"name": "ชาไทยเย็น", "price": 45.0, "icon": "🧋"},
-    {"name": "เค้กช็อกโกแลต", "price": 85.0, "icon": "🍰"},
-    {"name": "ครัวซองต์", "price": 60.0, "icon": "🥐"},
-    {"name": "ชาเขียวมัทฉะลาเต้", "price": 65.0, "icon": "🍵"},
-]
-
-# --- ฝั่งซ้าย: เพิ่มและเลือกสินค้า ---
-with col_left:
-    st.subheader("➕ เพิ่มรายการสินค้าด่วน")
-    c1, c2, c3 = st.columns([3, 2, 2])
-    with c1:
-        custom_name = st.text_input("ชื่อสินค้า", placeholder="เช่น ลาเต้เย็น", key="c_name")
-    with c2:
-        custom_price = st.number_input("ราคา (บาท)", min_value=0.0, step=5.0, key="c_price")
-    with c3:
-        st.write(" ")
-        st.write(" ")
-        if st.button("เพิ่มลงตะกร้า", type="primary", use_container_width=True):
-            if custom_name and custom_price > 0:
-                if custom_name in st.session_state.cart:
-                    st.session_state.cart[custom_name]["qty"] += 1
-                else:
-                    st.session_state.cart[custom_name] = {"price": custom_price, "qty": 1}
-                st.rerun()
-            else:
-                st.error("กรุณากรอกชื่อและราคาให้ถูกต้อง")
-
-    st.subheader("📋 เมนูลัดประจำร้าน PoohBanyen")
-    grid_cols = st.columns(3)
-    for idx, prod in enumerate(preset_products):
-        with grid_cols[idx % 3]:
-            if st.button(f"{prod['icon']} {prod['name']}\n\n฿{prod['price']:.2f}", key=f"p_{idx}", use_container_width=True):
-                name = prod["name"]
-                if name in st.session_state.cart:
-                    st.session_state.cart[name]["qty"] += 1
-                else:
-                    st.session_state.cart[name] = {"price": prod["price"], "qty": 1}
-                st.rerun()
-
-    st.divider()
-    st.subheader("📊 สรุปยอดขายวันนี้")
-    total_bills = len(st.session_state.sales_history)
-    total_sales = sum(item["total"] for item in st.session_state.sales_history)
-    
-    sc1, sc2 = st.columns(2)
-    sc1.metric("จำนวนบิลวันนี้", f"{total_bills} บิล")
-    sc2.metric("ยอดขายรวมสุทธิ", f"฿{total_sales:,.2f}")
-    
-    if st.button("ล้างประวัติการขาย"):
-        st.session_state.sales_history = []
-        st.rerun()
-
-# --- ฝั่งขวา: ตะกร้าสินค้า การคิดเงิน และทอนเงิน ---
-with col_right:
-    st.subheader("🛒 ตะกร้าสินค้า")
-    
-    if not st.session_state.cart:
-        st.info("ยังไม่มีสินค้าในตะกร้า")
-    else:
-        for name, details in list(st.session_state.cart.items()):
-            ic1, ic2, ic3 = st.columns([4, 3, 1])
-            ic1.write(f"**{name}**\n\n฿{details['price']:.2f}")
+    <!-- Main Game Workspace -->
+    <div class="w-full max-w-4xl grid grid-cols-1 md:grid-cols-12 gap-4">
+        
+        <!-- Left: Customer Order & Price Board (7 Cols) -->
+        <div class="md:col-span-7 space-y-4">
             
-            # ปุ่มเพิ่ม/ลด จำนวน
-            qty = ic2.number_input("จำนวน", min_value=1, value=details['qty'], key=f"q_{name}", label_visibility="collapsed")
-            st.session_state.cart[name]["qty"] = qty
+            <!-- Customer Order Box -->
+            <div class="bg-amber-950/40 border-2 border-amber-600/50 rounded-2xl p-5 shadow-lg">
+                <div class="flex justify-between items-center mb-3">
+                    <span class="bg-amber-500 text-amber-950 font-bold px-3 py-1 rounded-full text-xs">
+                        <i class="fa-solid fa-user mr-1"></i> ออร์เดอร์จากลูกค้า
+                    </span>
+                    <span id="discount-badge" class="hidden bg-rose-500 text-white font-bold px-3 py-1 rounded-full text-xs animate-pulse">
+                        <i class="fa-solid fa-tag mr-1"></i> ลูกค้าขอลด 10%!
+                    </span>
+                </div>
+
+                <div id="order-items-list" class="space-y-2 my-4 min-h-[90px]">
+                    <!-- Items generated by JS -->
+                </div>
+
+                <div class="border-t border-amber-800/60 pt-3 flex justify-between items-center text-sm">
+                    <span class="text-slate-300">💵 ลูกค้าจ่ายแบงก์:</span>
+                    <span id="cash-paid" class="text-xl font-bold text-emerald-400">฿0</span>
+                </div>
+            </div>
+
+            <!-- Price Reference Board -->
+            <div class="bg-slate-800 border border-slate-700 rounded-2xl p-4">
+                <h3 class="text-sm font-bold text-slate-300 mb-3"><i class="fa-solid fa-clipboard-list mr-2 text-amber-400"></i>ป้ายราคาสินค้าประจำร้าน (ใช้คิดราคา)</h3>
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2" id="price-board">
+                    <!-- Price List generated by JS -->
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Right: Numpad & Calculation Panel (5 Cols) -->
+        <div class="md:col-span-5 bg-slate-800 border border-slate-700 rounded-2xl p-5 shadow-xl flex flex-col justify-between">
             
-            if ic3.button("❌", key=f"del_{name}"):
-                del st.session_state.cart[name]
-                st.rerun()
+            <div>
+                <!-- Display Mode Toggle / Header -->
+                <div class="text-center mb-3">
+                    <span id="step-title" class="text-xs font-bold text-amber-400 bg-amber-950 px-3 py-1 rounded-full border border-amber-800">
+                        ขั้นตอนที่ 1: กดป้อน "ราคาสุดธิ"
+                    </span>
+                </div>
 
-        if st.button("ล้างตะกร้าทั้งหมด", type="secondary"):
-            st.session_state.cart = {}
-            st.rerun()
+                <!-- Main Calculator Display -->
+                <div class="bg-slate-950 rounded-xl p-4 border border-slate-700 text-right mb-3">
+                    <div id="display-label" class="text-xs text-slate-400 mb-1">ยอดรวมที่ต้องการคิด (บาท):</div>
+                    <div id="display-value" class="text-3xl font-mono font-extrabold text-emerald-400 tracking-wider">0</div>
+                </div>
 
-    st.divider()
-    
-    # การคำนวณราคารวม
-    subtotal = sum(d["price"] * d["qty"] for d in st.session_state.cart.values())
-    
-    st.subheader("🏷️ ส่วนลด & ภาษี")
-    
-    # ปุ่มเลือกส่วนลด 10%
-    st.session_state.use_discount_10 = st.checkbox("🏷️ ใช้ส่วนลด 10%", value=st.session_state.use_discount_10)
-    
-    if st.session_state.use_discount_10:
-        discount_amount = subtotal * 0.10
-    else:
-        discount_amount = st.number_input("ส่วนลดเพิ่มเติม (บาท)", min_value=0.0, max_value=float(subtotal), value=0.0)
-        
-    after_discount = subtotal - discount_amount
-    vat_amount = after_discount * 0.07  # คิด VAT 7%
-    grand_total = after_discount + vat_amount
-    
-    st.write(f"**ราคารวม (Subtotal):** ฿{subtotal:,.2f}")
-    st.write(f"**ส่วนลด:** -฿{discount_amount:,.2f}")
-    st.write(f"**ภาษี VAT (7%):** ฿{vat_amount:,.2f}")
-    st.markdown(f"### **ยอดชำระสุทธิ:** :green[฿{grand_total:,.2f}]")
-    
-    st.divider()
-    
-    st.subheader("💵 รับเงิน & คำนวณเงินทอน")
-    
-    # ปุ่มรับเงินด่วน
-    qc1, qc2, qc3, qc4 = st.columns(4)
-    if qc1.button("พอดี", use_container_width=True):
-        st.session_state.cash_input_val = float(grand_total)
-        st.rerun()
-    if qc2.button("100", use_container_width=True):
-        st.session_state.cash_input_val = 100.0
-        st.rerun()
-    if qc3.button("500", use_container_width=True):
-        st.session_state.cash_input_val = 500.0
-        st.rerun()
-    if qc4.button("1000", use_container_width=True):
-        st.session_state.cash_input_val = 1000.0
-        st.rerun()
-        
-    cash = st.number_input("รับเงินมา (บาท)", min_value=0.0, value=float(st.session_state.cash_input_val), step=10.0, key="cash_field")
-    st.session_state.cash_input_val = cash
-    
-    change = cash - grand_total
-    
-    if cash > 0 and cash < grand_total:
-        st.error(f"⚠️ เงินยังขาดอีก ฿{grand_total - cash:,.2f}")
-    elif cash >= grand_total and grand_total > 0:
-        st.success(f"### **เงินทอน:** ฿{change:,.2f}")
+                <!-- Quick Action Buttons -->
+                <div class="grid grid-cols-2 gap-2 mb-3">
+                    <button id="btn-toggle-10" onclick="toggleDiscount10()" class="py-2 px-3 rounded-lg text-xs font-bold bg-slate-700 text-slate-300 border border-slate-600 hover:bg-amber-600 hover:text-white transition">
+                        <i class="fa-solid fa-percent mr-1"></i> กดลด 10%
+                    </button>
+                    <button onclick="clearDisplay()" class="py-2 px-3 rounded-lg text-xs font-bold bg-rose-950 text-rose-300 border border-rose-800 hover:bg-rose-700 hover:text-white transition">
+                        <i class="fa-solid fa-eraser mr-1"></i> ล้างตัวเลข (C)
+                    </button>
+                </div>
 
-    # ปุ่มจบการขาย
-    can_checkout = len(st.session_state.cart) > 0 and cash >= grand_total and grand_total > 0
-    if st.button("✅ จบการขาย & รับเงินทอน", type="primary", use_container_width=True, disabled=not can_checkout):
-        # บันทึกยอดขาย
-        now = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-        st.session_state.sales_history.append({"timestamp": now, "total": grand_total})
+                <!-- On-Screen Numpad -->
+                <div class="grid grid-cols-3 gap-2 text-xl font-bold">
+                    <button onclick="pressNum('7')" class="num-btn bg-slate-700 hover:bg-slate-600 py-3 rounded-xl shadow">7</button>
+                    <button onclick="pressNum('8')" class="num-btn bg-slate-700 hover:bg-slate-600 py-3 rounded-xl shadow">8</button>
+                    <button onclick="pressNum('9')" class="num-btn bg-slate-700 hover:bg-slate-600 py-3 rounded-xl shadow">9</button>
+                    
+                    <button onclick="pressNum('4')" class="num-btn bg-slate-700 hover:bg-slate-600 py-3 rounded-xl shadow">4</button>
+                    <button onclick="pressNum('5')" class="num-btn bg-slate-700 hover:bg-slate-600 py-3 rounded-xl shadow">5</button>
+                    <button onclick="pressNum('6')" class="num-btn bg-slate-700 hover:bg-slate-600 py-3 rounded-xl shadow">6</button>
+                    
+                    <button onclick="pressNum('1')" class="num-btn bg-slate-700 hover:bg-slate-600 py-3 rounded-xl shadow">1</button>
+                    <button onclick="pressNum('2')" class="num-btn bg-slate-700 hover:bg-slate-600 py-3 rounded-xl shadow">2</button>
+                    <button onclick="pressNum('3')" class="num-btn bg-slate-700 hover:bg-slate-600 py-3 rounded-xl shadow">3</button>
+                    
+                    <button onclick="pressNum('0')" class="num-btn bg-slate-700 hover:bg-slate-600 py-3 rounded-xl shadow">0</button>
+                    <button onclick="pressNum('.')" class="num-btn bg-slate-700 hover:bg-slate-600 py-3 rounded-xl shadow">.</button>
+                    <button onclick="backspace()" class="num-btn bg-slate-700 hover:bg-slate-600 py-3 rounded-xl shadow text-amber-400"><i class="fa-solid fa-backspace text-base"></i></button>
+                </div>
+            </div>
+
+            <button onclick="submitAnswer()" class="w-full mt-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3.5 rounded-xl shadow-lg transition text-base">
+                <i class="fa-solid fa-paper-plane mr-2"></i> ยืนยันคำตอบ
+            </button>
+        </div>
+    </div>
+
+    <!-- Result / Feedback Modal Overlay -->
+    <div id="result-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden flex justify-center items-center z-50 p-4">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-sm w-full p-6 text-center space-y-4">
+            <div id="modal-icon" class="text-5xl"></div>
+            <h2 id="modal-title" class="text-2xl font-bold"></h2>
+            <p id="modal-desc" class="text-sm text-slate-300"></p>
+            
+            <div id="modal-breakdown" class="bg-slate-900 p-3 rounded-xl text-xs space-y-1 text-left text-slate-400"></div>
+
+            <button onclick="nextRound()" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-3 rounded-xl transition">
+                เล่นออร์เดอร์ถัดไป ➔
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const menuProducts = [
+            { id: 1, name: 'อเมริกาโน่', price: 50, icon: '☕' },
+            { id: 2, name: 'ชาไทยเย็น', price: 45, icon: '🧋' },
+            { id: 3, name: 'เค้กช็อกโกแลต', price: 85, icon: '🍰' },
+            { id: 4, name: 'ครัวซองต์', price: 60, icon: '🥐' },
+            { id: 5, name: 'ชาเขียวมัทฉะ', price: 65, icon: '🍵' },
+            { id: 6, name: 'แซนด์วิช', price: 40, icon: '🥪' }
+        ];
+
+        let score = 0;
+        let streak = 0;
         
-        st.balloons()
-        st.success("🎉 ชำระเงินสำเร็จ!")
+        let currentOrder = [];
+        let isDiscountRequested = false;
+        let isTenPercentApplied = false;
+        let cashGiven = 0;
         
-        # แสดงใบเสร็จรับเงิน
-        st.markdown("### 📄 ใบเสร็จรับเงิน (PoohBanyen Cafe)")
-        st.caption(f"เวลา: {now}")
-        st.write("---")
-        for item_name, item_info in st.session_state.cart.items():
-            st.write(f"{item_name} x{item_info['qty']} — ฿{item_info['price']*item_info['qty']:.2f}")
-        st.write("---")
-        st.write(f"ราคารวม: ฿{subtotal:.2f}")
-        st.write(f"ส่วนลด: -฿{discount_amount:.2f}")
-        st.write(f"VAT 7%: ฿{vat_amount:.2f}")
-        st.write(f"**ยอดชำระสุทธิ: ฿{grand_total:.2f}**")
-        st.write(f"รับเงินมา: ฿{cash:.2f}")
-        st.markdown(f"### **เงินทอน: ฿{change:.2f}**")
-        st.write("---")
-        
-        # ล้างตะกร้าหลังจบการขาย
-        st.session_state.cart = {}
-        st.session_state.cash_input_val = 0.0
-        st.session_state.use_discount_10 = False
+        let currentStep = 1; // 1 = Enter Total Price, 2 = Enter Change
+        let enteredTotal = 0;
+        let enteredChange = 0;
+
+        let inputVal = "0";
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderPriceBoard();
+            generateNewOrder();
+        });
+
+        function renderPriceBoard() {
+            document.getElementById('price-board').innerHTML = menuProducts.map(p => `
+                <div class="bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-center">
+                    <div class="text-xl mb-1">${p.icon}</div>
+                    <div class="text-xs font-semibold text-slate-300 truncate">${p.name}</div>
+                    <div class="text-xs font-bold text-amber-400">฿${p.price}</div>
+                </div>
+            `).join('');
+        }
+
+        function generateNewOrder() {
+            currentStep = 1;
+            inputVal = "0";
+            isTenPercentApplied = false;
+            updateDiscountButtonUI();
+
+            // Randomize 1-3 items
+            const numItems = Math.floor(Math.random() * 3) + 1;
+            const shuffled = [...menuProducts].sort(() => 0.5 - Math.random());
+            currentOrder = shuffled.slice(0, numItems).map(item => ({
+                ...item,
+                qty: Math.floor(Math.random() * 2) + 1
+            }));
+
+            // Randomize 10% discount request from customer (30% chance)
+            isDiscountRequested = Math.random() < 0.35;
+            const discountBadge = document.getElementById('discount-badge');
+            if (isDiscountRequested) {
+                discountBadge.classList.remove('hidden');
+            } else {
+                discountBadge.classList.add('hidden');
+            }
+
+            // Calculate exact total for cash calculation
+            let subtotal = currentOrder.reduce((sum, item) => sum + (item.price * item.qty), 0);
+            let targetTotal = isDiscountRequested ? subtotal * 0.9 : subtotal;
+            
+            // Random banknote paid by customer
+            const bankOptions = [100, 500, 1000];
+            cashGiven = bankOptions.find(b => b >= targetTotal) || 1000;
+
+            // Render order list
+            document.getElementById('order-items-list').innerHTML = currentOrder.map(item => `
+                <div class="flex justify-between items-center text-sm bg-slate-900/80 p-2.5 rounded-xl border border-slate-700">
+                    <div>
+                        <span class="text-base mr-2">${item.icon}</span>
+                        <span class="font-bold text-slate-200">${item.name}</span>
+                    </div>
+                    <span class="font-extrabold text-amber-400 bg-amber-950/60 px-2 py-0.5 rounded text-xs">x${item.qty} ชิ้น</span>
+                </div>
+            `).join('');
+
+            document.getElementById('cash-paid').innerText = `฿${cashGiven}`;
+            updateDisplay();
+            updateStepUI();
+        }
+
+        function pressNum(num) {
+            if (inputVal === "0" && num !== ".") {
+                inputVal = num;
+            } else {
+                if (num === "." && inputVal.includes(".")) return;
+                inputVal += num;
+            }
+            updateDisplay();
+        }
+
+        function backspace() {
+            if (inputVal.length > 1) {
+                inputVal = inputVal.slice(0, -1);
+            } else {
+                inputVal = "0";
+            }
+            updateDisplay();
+        }
+
+        function clearDisplay() {
+            inputVal = "0";
+            updateDisplay();
+        }
+
+        function updateDisplay() {
+            document.getElementById('display-value').innerText = inputVal;
+        }
+
+        function toggleDiscount10() {
+            isTenPercentApplied = !isTenPercentApplied;
+            updateDiscountButtonUI();
+        }
+
+        function updateDiscountButtonUI() {
+            const btn = document.getElementById('btn-toggle-10');
+            if (isTenPercentApplied) {
+                btn.className = "py-2 px-3 rounded-lg text-xs font-bold bg-amber-500 text-slate-950 border border-amber-400 transition";
+            } else {
+                btn.className = "py-2 px-3 rounded-lg text-xs font-bold bg-slate-700 text-slate-300 border border-slate-600 hover:bg-amber-600 hover:text-white transition";
+            }
+        }
+
+        function updateStepUI() {
+            const title = document.getElementById('step-title');
+            const label = document.getElementById('display-label');
+            
+            if (currentStep === 1) {
+                title.innerText = 'ขั้นตอนที่ 1: กดป้อน "ราคาสุดธิ"';
+                title.className = "text-xs font-bold text-amber-400 bg-amber-950 px-3 py-1 rounded-full border border-amber-800";
+                label.innerText = 'ราคารวมสุทธิ (บาท):';
+            } else {
+                title.innerText = 'ขั้นตอนที่ 2: กดป้อน "เงินทอน"';
+                title.className = "text-xs font-bold text-emerald-400 bg-emerald-950 px-3 py-1 rounded-full border border-emerald-800";
+                label.innerText = 'เงินทอนที่ต้องทอนลูกค้า (บาท):';
+            }
+        }
+
+        function submitAnswer() {
+            const val = parseFloat(inputVal) || 0;
+            
+            if (currentStep === 1) {
+                enteredTotal = val;
+                currentStep = 2;
+                inputVal = "0";
+                updateDisplay();
+                updateStepUI();
+            } else if (currentStep === 2) {
+                enteredChange = val;
+                checkFinalResult();
+            }
+        }
+
+        function checkFinalResult() {
+            let subtotal = currentOrder.reduce((sum, item) => sum + (item.price * item.qty), 0);
+            let correctTotal = isDiscountRequested ? subtotal * 0.9 : subtotal;
+            let correctChange = cashGiven - correctTotal;
+
+            const isTotalCorrect = Math.abs(enteredTotal - correctTotal) < 0.1;
+            const isChangeCorrect = Math.abs(enteredChange - correctChange) < 0.1;
+
+            const modal = document.getElementById('result-modal');
+            const icon = document.getElementById('modal-icon');
+            const title = document.getElementById('modal-title');
+            const desc = document.getElementById('modal-desc');
+            const breakdown = document.getElementById('modal-breakdown');
+
+            if (isTotalCorrect && isChangeCorrect) {
+                score += 100;
+                streak += 1;
+                icon.innerText = "🎉";
+                title.innerText = "คิดเงินถูกต้อง!";
+                title.className = "text-2xl font-bold text-emerald-400";
+                desc.innerText = "คุณคิดราคาสินค้าและทอนเงินได้แม่นยำมาก!";
+            } else {
+                streak = 0;
+                icon.innerText = "❌";
+                title.innerText = "คำนวณผิดพลาด!";
+                title.className = "text-2xl font-bold text-rose-400";
+                desc.innerText = "ลองดูวิธีคิดคำนวณที่ถูกต้องด้านล่างนี้ครับ";
+            }
+
+            breakdown.innerHTML = `
+                <div class="flex justify-between"><span>ราคารวมปกติ:</span><span>฿${subtotal.toFixed(2)}</span></div>
+                <div class="flex justify-between"><span>ส่วนลด (10%):</span><span>${isDiscountRequested ? '-฿' + (subtotal*0.1).toFixed(2) : 'ไม่มี'}</span></div>
+                <div class="flex justify-between font-bold text-amber-400 border-t border-slate-700 pt-1"><span>ยอดรวมสุทธิที่ถูก:</span><span>฿${correctTotal.toFixed(2)}</span></div>
+                <div class="flex justify-between text-slate-300"><span>คุณตอบยอดรวม:</span><span>฿${enteredTotal.toFixed(2)} ${isTotalCorrect ? '✅' : '❌'}</span></div>
+                <div class="flex justify-between font-bold text-emerald-400 border-t border-slate-700 pt-1"><span>เงินทอนที่ถูก:</span><span>฿${correctChange.toFixed(2)}</span></div>
+                <div class="flex justify-between text-slate-300"><span>คุณตอบเงินทอน:</span><span>฿${enteredChange.toFixed(2)} ${isChangeCorrect ? '✅' : '❌'}</span></div>
+            `;
+
+            document.getElementById('score-val').innerText = score;
+            document.getElementById('streak-val').innerText = `${streak} ด่าน`;
+
+            modal.classList.remove('hidden');
+        }
+
+        function nextRound() {
+            document.getElementById('result-modal').classList.add('hidden');
+            generateNewOrder();
+        }
+    </script>
+</body>
+</html>
+"""
+
+components.html(html_code, height=680, scrolling=True)
