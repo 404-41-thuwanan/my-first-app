@@ -16,14 +16,9 @@ html_code = """
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Kanit', sans-serif; }
-        @media print {
-            body * { visibility: hidden; }
-            #receipt-print, #receipt-print * { visibility: visible; }
-            #receipt-print { position: absolute; left: 0; top: 0; width: 100%; display: block !important; }
-        }
     </style>
 </head>
-<body class="bg-slate-100 min-h-screen text-slate-800">
+<body class="bg-slate-100 min-h-screen text-slate-800 pb-10">
 
     <!-- Navbar -->
     <nav class="bg-amber-800 text-white shadow-md">
@@ -84,7 +79,7 @@ html_code = """
 
         <!-- Right Column: Cart & Payment (5 Cols) -->
         <div class="lg:col-span-5 space-y-6">
-            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 sticky top-4">
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
                 <div class="flex justify-between items-center mb-4 border-b pb-3">
                     <h2 class="text-lg font-bold text-slate-800"><i class="fa-solid fa-receipt mr-2 text-amber-700"></i>ตะกร้าสินค้า</h2>
                     <button onclick="clearCart()" class="text-xs text-red-500 hover:text-red-700">ล้างตะกร้า</button>
@@ -102,22 +97,30 @@ html_code = """
                         <span id="subtotal">฿0.00</span>
                     </div>
 
-                    <!-- Discount -->
-                    <div class="bg-amber-50 p-3 rounded-lg space-y-2">
+                    <!-- Discount Choices -->
+                    <div class="bg-amber-50 p-3 rounded-lg space-y-2 border border-amber-200">
                         <div class="flex justify-between items-center">
-                            <span class="font-medium text-amber-900 text-xs">คำนวณส่วนลด</span>
-                            <span id="auto-discount-badge" class="hidden bg-emerald-600 text-white text-[10px] px-2 py-0.5 rounded-full font-normal">ส่วนลด 10% (ซื้อครบ 200฿)</span>
+                            <span class="font-semibold text-amber-900 text-xs"><i class="fa-solid fa-tags mr-1"></i>ตัวเลือกส่วนลด</span>
                         </div>
+                        
+                        <!-- Quick Discount 10% Button -->
+                        <div class="flex gap-2 mb-2">
+                            <button id="btn-discount-10" onclick="toggleTenPercentDiscount()" class="w-full py-1.5 px-3 rounded-lg text-xs font-bold border border-amber-600 text-amber-800 bg-white hover:bg-amber-100 transition">
+                                <i class="fa-solid fa-percent mr-1"></i> ส่วนลด 10%
+                            </button>
+                        </div>
+
+                        <!-- Manual Custom Discount -->
                         <div class="flex gap-2">
                             <select id="discount-type" onchange="calculateTotal()" class="p-2 text-xs border rounded-lg bg-white outline-none">
-                                <option value="percent">ส่วนลด (%)</option>
-                                <option value="flat">ส่วนลด (บาท)</option>
+                                <option value="percent">กำหนด (%)</option>
+                                <option value="flat">กำหนด (บาท)</option>
                             </select>
                             <input type="number" id="discount-value" value="0" min="0" oninput="calculateTotal()" placeholder="0" class="p-2 text-xs border rounded-lg bg-white w-full outline-none">
                         </div>
                     </div>
 
-                    <!-- VAT Always Enabled -->
+                    <!-- VAT Always Included -->
                     <div class="flex justify-between items-center text-slate-600">
                         <label class="flex items-center gap-2 cursor-pointer">
                             <input type="checkbox" id="vat-toggle" checked onchange="calculateTotal()" class="rounded text-amber-700">
@@ -137,46 +140,53 @@ html_code = """
                         <label class="block text-xs font-medium text-slate-600">รับเงินมา (บาท)</label>
                         <input type="number" id="cash-received" oninput="calculateChange()" placeholder="0.00" class="p-2.5 border rounded-lg w-full text-lg font-semibold focus:ring-2 focus:ring-amber-500 outline-none">
                         <div class="grid grid-cols-4 gap-1 text-xs">
-                            <button onclick="quickCash('exact')" class="bg-slate-200 hover:bg-slate-300 py-1 rounded">พอดี</button>
-                            <button onclick="quickCash(100)" class="bg-slate-200 hover:bg-slate-300 py-1 rounded">100</button>
-                            <button onclick="quickCash(500)" class="bg-slate-200 hover:bg-slate-300 py-1 rounded">500</button>
-                            <button onclick="quickCash(1000)" class="bg-slate-200 hover:bg-slate-300 py-1 rounded">1000</button>
+                            <button onclick="quickCash('exact')" class="bg-slate-200 hover:bg-slate-300 py-1.5 rounded font-medium">พอดี</button>
+                            <button onclick="quickCash(100)" class="bg-slate-200 hover:bg-slate-300 py-1.5 rounded font-medium">100</button>
+                            <button onclick="quickCash(500)" class="bg-slate-200 hover:bg-slate-300 py-1.5 rounded font-medium">500</button>
+                            <button onclick="quickCash(1000)" class="bg-slate-200 hover:bg-slate-300 py-1.5 rounded font-medium">1000</button>
                         </div>
                     </div>
 
-                    <div class="flex justify-between items-center p-3 bg-emerald-50 rounded-lg text-emerald-900 font-bold">
+                    <div class="flex justify-between items-center p-3 bg-emerald-50 rounded-lg text-emerald-900 font-bold border border-emerald-200">
                         <span>เงินทอน</span>
-                        <span id="change-amount" class="text-xl">฿0.00</span>
+                        <span id="change-amount" class="text-xl text-emerald-600">฿0.00</span>
                     </div>
 
-                    <button onclick="checkout()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-lg shadow-md transition text-center">
-                        <i class="fa-solid fa-check-circle mr-2"></i> จบการขาย / พิมพ์ใบเสร็จ
+                    <button onclick="checkout()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-lg shadow-md transition text-center text-base">
+                        <i class="fa-solid fa-check-circle mr-2"></i> จบการขาย & รับเงินทอน
                     </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Hidden Receipt for Printing -->
-    <div id="receipt-print" class="hidden p-4 max-w-xs mx-auto text-black text-xs font-mono">
-        <div class="text-center mb-3">
-            <h2 class="text-base font-bold">PoohBanyen Cafe</h2>
-            <p>ใบเสร็จรับเงินอย่างย่อ</p>
-            <p id="receipt-date"></p>
+    <!-- Receipt Modal Popup -->
+    <div id="receipt-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden flex justify-center items-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 text-slate-800 space-y-4">
+            <div class="text-center">
+                <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-2 text-2xl">
+                    <i class="fa-solid fa-check"></i>
+                </div>
+                <h3 class="text-xl font-bold text-slate-900">ชำระเงินสำเร็จ!</h3>
+                <p class="text-xs text-slate-500">PoohBanyen Cafe</p>
+                <p id="m-date" class="text-[11px] text-slate-400 mt-1"></p>
+            </div>
+
+            <div class="border-t border-b border-dashed py-3 my-2 space-y-1 max-h-40 overflow-y-auto text-xs" id="m-items"></div>
+
+            <div class="space-y-1 text-xs">
+                <div class="flex justify-between text-slate-600"><span>ราคารวม:</span><span id="m-subtotal"></span></div>
+                <div class="flex justify-between text-slate-600"><span>ส่วนลด:</span><span id="m-discount"></span></div>
+                <div class="flex justify-between text-slate-600"><span>VAT 7%:</span><span id="m-vat"></span></div>
+                <div class="flex justify-between font-bold text-sm text-slate-900 border-t pt-1"><span>ยอดสุทธิ:</span><span id="m-total" class="text-amber-700"></span></div>
+                <div class="flex justify-between text-slate-600 pt-1"><span>รับเงินมา:</span><span id="m-cash"></span></div>
+                <div class="flex justify-between font-bold text-emerald-700 bg-emerald-50 p-2 rounded"><span>เงินทอน:</span><span id="m-change" class="text-base"></span></div>
+            </div>
+
+            <button onclick="closeModal()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 rounded-xl transition">
+                ตกลง / เริ่มรายการใหม่
+            </button>
         </div>
-        <div class="border-b border-dashed mb-2"></div>
-        <div id="receipt-items" class="space-y-1 mb-2"></div>
-        <div class="border-b border-dashed mb-2"></div>
-        <div class="space-y-1">
-            <div class="flex justify-between"><span>รวม:</span><span id="r-subtotal"></span></div>
-            <div class="flex justify-between"><span>ส่วนลด:</span><span id="r-discount"></span></div>
-            <div class="flex justify-between"><span>VAT 7%:</span><span id="r-vat"></span></div>
-            <div class="flex justify-between font-bold text-sm"><span>สุทธิ:</span><span id="r-total"></span></div>
-            <div class="flex justify-between"><span>รับเงิน:</span><span id="r-cash"></span></div>
-            <div class="flex justify-between"><span>เงินทอน:</span><span id="r-change"></span></div>
-        </div>
-        <div class="border-b border-dashed my-3"></div>
-        <div class="text-center">ขอบคุณที่อุดหนุน PoohBanyen Cafe ครับ!</div>
     </div>
 
     <script>
@@ -189,6 +199,7 @@ html_code = """
         ];
 
         let cart = [];
+        let isTenPercentActive = false;
         let salesHistory = JSON.parse(localStorage.getItem('salesHistory_poohbanyen')) || [];
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -199,7 +210,7 @@ html_code = """
 
         function renderCatalog() {
             document.getElementById('quick-catalog').innerHTML = presetProducts.map(p => `
-                <button onclick="addToCart('${p.name}', ${p.price})" class="p-3 border rounded-xl bg-slate-50 hover:bg-amber-50 hover:border-amber-300 transition text-left flex flex-col justify-between h-20">
+                <button onclick="addToCart('${p.name}', ${p.price})" class="p-3 border rounded-xl bg-slate-50 hover:bg-amber-50 hover:border-amber-300 transition text-left flex flex-col justify-between h-20 shadow-sm">
                     <div class="font-medium text-xs text-slate-700 truncate"><i class="fa-solid ${p.icon} text-amber-700 mr-1"></i>${p.name}</div>
                     <div class="text-sm font-bold text-amber-800">฿${p.price.toFixed(2)}</div>
                 </button>
@@ -216,7 +227,7 @@ html_code = """
         function addCustomProduct() {
             const name = document.getElementById('custom-name').value.trim();
             const price = parseFloat(document.getElementById('custom-price').value);
-            if (!name || isNaN(price) || price <= 0) return alert('กรุณากรอกข้อมูลให้ถูกต้อง');
+            if (!name || isNaN(price) || price <= 0) return alert('กรุณากรอกชื่อและราคาให้ถูกต้อง');
             addToCart(name, price);
             document.getElementById('custom-name').value = '';
             document.getElementById('custom-price').value = '';
@@ -236,9 +247,9 @@ html_code = """
                         <div class="text-xs text-slate-500">฿${item.price.toFixed(2)} x ${item.qty}</div>
                     </div>
                     <div class="flex items-center gap-2">
-                        <button onclick="updateQty(${index}, -1)" class="w-6 h-6 rounded-full bg-slate-100 font-bold text-slate-600">-</button>
+                        <button onclick="updateQty(${index}, -1)" class="w-6 h-6 rounded-full bg-slate-100 font-bold text-slate-600 hover:bg-slate-200">-</button>
                         <span class="w-5 text-center font-semibold">${item.qty}</span>
-                        <button onclick="updateQty(${index}, 1)" class="w-6 h-6 rounded-full bg-slate-100 font-bold text-slate-600">+</button>
+                        <button onclick="updateQty(${index}, 1)" class="w-6 h-6 rounded-full bg-slate-100 font-bold text-slate-600 hover:bg-slate-200">+</button>
                         <span class="font-bold text-slate-800 w-14 text-right">฿${(item.price * item.qty).toFixed(2)}</span>
                     </div>
                 </div>
@@ -254,9 +265,31 @@ html_code = """
 
         function clearCart() {
             cart = [];
+            isTenPercentActive = false;
+            updateTenPercentButtonUI();
             document.getElementById('discount-value').value = 0;
             document.getElementById('cash-received').value = '';
             renderCart();
+        }
+
+        function toggleTenPercentDiscount() {
+            isTenPercentActive = !isTenPercentActive;
+            if (isTenPercentActive) {
+                document.getElementById('discount-value').value = 0; // ล้างค่าส่วนลดแบบกรอกมือ
+            }
+            updateTenPercentButtonUI();
+            calculateTotal();
+        }
+
+        function updateTenPercentButtonUI() {
+            const btn = document.getElementById('btn-discount-10');
+            if (isTenPercentActive) {
+                btn.className = "w-full py-1.5 px-3 rounded-lg text-xs font-bold border border-amber-600 text-white bg-amber-700 shadow-sm transition";
+                btn.innerHTML = '<i class="fa-solid fa-check mr-1"></i> ใช้ส่วนลด 10%';
+            } else {
+                btn.className = "w-full py-1.5 px-3 rounded-lg text-xs font-bold border border-amber-600 text-amber-800 bg-white hover:bg-amber-100 transition";
+                btn.innerHTML = '<i class="fa-solid fa-percent mr-1"></i> ส่วนลด 10%';
+            }
         }
 
         function calculateTotal() {
@@ -264,22 +297,14 @@ html_code = """
             const discountType = document.getElementById('discount-type').value;
             const discountValue = parseFloat(document.getElementById('discount-value').value) || 0;
             const isVat = document.getElementById('vat-toggle').checked;
-            const autoBadge = document.getElementById('auto-discount-badge');
 
-            // คำนวณส่วนลดตามป้อนข้อมูล
-            let manualDiscount = discountType === 'percent' ? subtotal * (discountValue / 100) : discountValue;
-
-            // โปรโมชั่นอัตโนมัติ: ซื้อครบ 200 บาท ลด 10%
-            let autoDiscount = 0;
-            if (subtotal >= 200) {
-                autoDiscount = subtotal * 0.10;
-                autoBadge.classList.remove('hidden');
+            let discountAmount = 0;
+            if (isTenPercentActive) {
+                discountAmount = subtotal * 0.10;
             } else {
-                autoBadge.classList.add('hidden');
+                discountAmount = discountType === 'percent' ? subtotal * (discountValue / 100) : discountValue;
             }
 
-            // เลือกใช้ส่วนลดสูงสุดระหว่างโปรอัตโนมัติกับส่วนลดกรอกเอง
-            let discountAmount = Math.max(autoDiscount, manualDiscount);
             discountAmount = Math.min(discountAmount, subtotal);
 
             const afterDiscount = subtotal - discountAmount;
@@ -301,10 +326,11 @@ html_code = """
 
             if (cart.length === 0 || cash < grandTotal) {
                 changeElem.innerText = '฿0.00';
-                changeElem.className = 'text-xl text-slate-400';
+                changeElem.className = 'text-xl font-bold text-slate-400';
             } else {
-                changeElem.innerText = `฿${(cash - grandTotal).toFixed(2)}`;
-                changeElem.className = 'text-xl text-emerald-600';
+                const change = cash - grandTotal;
+                changeElem.innerText = `฿${change.toFixed(2)}`;
+                changeElem.className = 'text-xl font-bold text-emerald-600';
             }
         }
 
@@ -320,21 +346,33 @@ html_code = """
             const cash = parseFloat(document.getElementById('cash-received').value) || 0;
             if (cash < grandTotal) return alert('ยอดเงินที่รับมาไม่เพียงพอ');
 
+            const change = cash - grandTotal;
             const transaction = { id: Date.now(), date: new Date().toLocaleString('th-TH'), total: grandTotal };
             salesHistory.push(transaction);
             localStorage.setItem('salesHistory_poohbanyen', JSON.stringify(salesHistory));
             updateHistorySummary();
 
-            document.getElementById('receipt-date').innerText = transaction.date;
-            document.getElementById('receipt-items').innerHTML = cart.map(i => `<div class="flex justify-between"><span>${i.name} x${i.qty}</span><span>${(i.price * i.qty).toFixed(2)}</span></div>`).join('');
-            document.getElementById('r-subtotal').innerText = subtotal.toFixed(2);
-            document.getElementById('r-discount').innerText = discountAmount.toFixed(2);
-            document.getElementById('r-vat').innerText = vatAmount.toFixed(2);
-            document.getElementById('r-total').innerText = grandTotal.toFixed(2);
-            document.getElementById('r-cash').innerText = cash.toFixed(2);
-            document.getElementById('r-change').innerText = (cash - grandTotal).toFixed(2);
+            // แสดง Modal ใบเสร็จ & สรุปเงินทอน
+            document.getElementById('m-date').innerText = transaction.date;
+            document.getElementById('m-items').innerHTML = cart.map(i => `
+                <div class="flex justify-between text-slate-700">
+                    <span>${i.name} x${i.qty}</span>
+                    <span>฿${(i.price * i.qty).toFixed(2)}</span>
+                </div>
+            `).join('');
 
-            window.print();
+            document.getElementById('m-subtotal').innerText = `฿${subtotal.toFixed(2)}`;
+            document.getElementById('m-discount').innerText = `-฿${discountAmount.toFixed(2)}`;
+            document.getElementById('m-vat').innerText = `฿${vatAmount.toFixed(2)}`;
+            document.getElementById('m-total').innerText = `฿${grandTotal.toFixed(2)}`;
+            document.getElementById('m-cash').innerText = `฿${cash.toFixed(2)}`;
+            document.getElementById('m-change').innerText = `฿${change.toFixed(2)}`;
+
+            document.getElementById('receipt-modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('receipt-modal').classList.add('hidden');
             clearCart();
         }
 
@@ -356,4 +394,4 @@ html_code = """
 </html>
 """
 
-components.html(html_code, height=900, scrolling=True)
+components.html(html_code, height=950, scrolling=True)
